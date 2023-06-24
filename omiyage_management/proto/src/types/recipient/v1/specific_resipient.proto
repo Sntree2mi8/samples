@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package types.recipient.v1;
+
+import "types/recipient/v1/relationship.proto";
+
+option go_package = "recipient";
+
+// 特定のお土産の受け取り手
+message SpecificRecipient {
+  string id = 1;
+
+  // 名前
+  string name = 2;
+
+  // 自分との関係性
+  repeated Relationship relationships = 3;
+}

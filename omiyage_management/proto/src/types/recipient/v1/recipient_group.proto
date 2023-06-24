@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package types.recipient.v1;
+
+import "types/recipient/v1/relationship.proto";
+import "types/recipient/v1/specific_resipient.proto";
+
+option go_package = "recipient";
+
+// お土産の受け取り手集団
+message RecipientGroup {
+  string id = 1;
+
+  // 集団の人数
+  int64 recipients_number = 2;
+
+  // 自分との関係性
+  repeated Relationship relationships = 3;
+
+  // 集団に属する特定個人
+  // 特に区別する必要のある人物
+  repeated SpecificRecipient specific_recipients = 4;
+}

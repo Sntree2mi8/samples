@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: arm64v8/mysql:8.0
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    container_name: company_service_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: omiyage
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass
+      TZ: "Asia/Tokyo"
+    volumes:
+      - ./conf/mysqlconf/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./conf/mysqlconf/initdb.d:/docker-entrypoint-initdb.d

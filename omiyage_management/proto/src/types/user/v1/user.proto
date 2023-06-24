@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package types.user.v1;
+
+option go_package = "user";
+
+message User {
+  string id = 1;
+  string name = 2;
+}

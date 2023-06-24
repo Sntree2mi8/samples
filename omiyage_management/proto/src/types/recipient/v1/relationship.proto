@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package types.recipient.v1;
+
+option go_package = "recipient";
+
+// お土産を受け取る人と自分の関係性
+message Relationship {
+  string id = 1;
+
+  // 関係性を表す名前
+  string name = 2;
+}

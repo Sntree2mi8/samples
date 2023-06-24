@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package omiyage.v1;
+
+import "types/recipient/v1/recipient_group.proto";
+import "types/user/v1/user.proto";
+
+option go_package = "omiyage";
+
+// omiyage service
+//
+// 共通で発生するエラー
+// - Internal
+// - Canceled
+// - InvalidArgument
+//
+// 各rpcで発生する個別のエラー
+// - response message に domain error として定義してあり, どんなエラーが帰るかに関してはそれぞれのrpcのdescriptionで書いてある.
+//
+// その他
+// - サンプルのプロジェクトでガッツリ作り込みたくないので認証認可周りはやってなくて, Request内のuser_idで全て判断.
+service OmiyageService {
+  // お土産サービスへの登録を行う.
+  rpc SignUp(SignUpRequest) returns (SignUpResponse);
+
+  // お土産の受け取り手グループを追加する.
+  rpc AddRecipientGroups(AddRecipientGroupsRequest) returns (AddRecipientGroupsResponse);
+}
+
+message SignUpRequest {
+  // ユーザ名
+  string user_name = 1;
+}
+
+message SignUpResponse {
+  optional DomainError error = 1;
+  types.user.v1.User user = 2;
+}
+
+message DomainError {}
+
+message AddRecipientGroupsRequest {
+  // 送り手ユーザID
+  //
+  // サンプルのプロジェクトでガッツリ作り込みたくないからどのユーザのリクエストかはここで判断しちゃう. contextとかからみるみたいなことはしない.
+  string user_id = 1;
+
+  // 受け取り手集団
+  repeated types.recipient.v1.RecipientGroup recipient_groups = 2;
+}
+
+message AddRecipientGroupsResponse {
+  optional DomainError error = 1;
+}
