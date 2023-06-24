@@ -33,7 +33,15 @@ message SignUpRequest {
 }
 
 message SignUpResponse {
-  message DomainError {}
+  message DomainError {
+    enum Code {
+      DOMAIN_ERROR_CODE_VALIDATION_UNSPECIFIED = 0;
+      DOMAIN_ERROR_CODE_VALIDATION_ERROR = 1;
+    }
+
+    Code code = 1;
+    string description = 2;
+  }
 
   optional DomainError error = 1;
   types.user.v1.User user = 2;
