@@ -117,8 +117,7 @@ func TestOmiyageService_SignUp(t *testing.T) {
 			},
 		},
 
-		// 判断(最終的にDomainのUnitTestに移すことができる)
-		// validation error
+		// 判断
 		{
 			name: "名前の入力は必須",
 			args: args{
