@@ -2,8 +2,13 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"github.com/DATA-DOG/go-txdb"
+	"github.com/Sntree2mi8/samples/omiyage_management/omiyage/internal/core/usecase/command"
+	"github.com/Sntree2mi8/samples/omiyage_management/omiyage/internal/infrastructure/mysql/gen/user"
 	omiyagev1 "github.com/Sntree2mi8/samples/omiyage_management/proto/gen/go/omiyage/v1"
 	userv1 "github.com/Sntree2mi8/samples/omiyage_management/proto/gen/go/types/user/v1"
+	"github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
@@ -57,15 +62,38 @@ func HelperNewOmiyageServiceBuffClient(t *testing.T, server omiyagev1.OmiyageSer
 	return omiyagev1.NewOmiyageServiceClient(conn)
 }
 
+func HelperNewTestTXedDB(t *testing.T) *sql.DB {
+	t.Helper()
+
+	db, err := sql.Open("txdb", "identifier")
+	if err != nil {
+		t.Fatal("failed to setup test db")
+	}
+
+	return db
+}
+
 func TestOmiyageService_SignUp(t *testing.T) {
+	config := mysql.Config{
+		User:                 "user",
+		Passwd:               "pass",
+		Addr:                 "localhost:3306",
+		DBName:               "omiyage",
+		AllowNativePasswords: true,
+		ParseTime:            true,
+	}
+	txdb.Register("txdb", "mysql", config.FormatDSN())
+
 	type args struct {
 		request *omiyagev1.SignUpRequest
 	}
 	tests := []struct {
-		name          string
-		args          args
-		want          *omiyagev1.SignUpResponse
-		assertErrFunc func(t *testing.T, err error)
+		name           string
+		args           args
+		arrangeFunc    func(t *testing.T, db *sql.DB)
+		want           *omiyagev1.SignUpResponse
+		assertErrFunc  func(t *testing.T, err error)
+		assertDataFunc func(t *testing.T, db *sql.DB, got *omiyagev1.SignUpResponse)
 	}{
 		// HappyPath
 		{
@@ -78,11 +106,12 @@ func TestOmiyageService_SignUp(t *testing.T) {
 			want: &omiyagev1.SignUpResponse{
 				Error: nil,
 				User: &userv1.User{
-					Id:   "unique_id",
 					Name: "UserName",
 				},
 			},
 			assertErrFunc: func(t *testing.T, err error) {
+				t.Helper()
+
 				assert.NoError(t, err)
 			},
 		},
@@ -104,27 +133,64 @@ func TestOmiyageService_SignUp(t *testing.T) {
 				User: nil,
 			},
 			assertErrFunc: func(t *testing.T, err error) {
+				t.Helper()
+
 				assert.NoError(t, err)
 			},
 		},
 
-		// TODO: 保存の仕方
+		// 保存の仕方
+		{
+			name: "保存できてる",
+			args: args{
+				request: &omiyagev1.SignUpRequest{
+					UserName: "UserName",
+				},
+			},
+			want: &omiyagev1.SignUpResponse{
+				Error: nil,
+				User: &userv1.User{
+					Name: "UserName",
+				},
+			},
+			assertErrFunc: func(t *testing.T, err error) {
+				t.Helper()
 
+				assert.NoError(t, err)
+			},
+			assertDataFunc: func(t *testing.T, db *sql.DB, got *omiyagev1.SignUpResponse) {
+				t.Helper()
+
+				res, err := user.New(db).FindUser(context.Background(), got.GetUser().GetId())
+				if err != nil {
+					t.Error(err)
+				} else {
+					assert.Equal(t, res.Name, "UserName")
+				}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := HelperNewOmiyageServiceBuffClient(t, NewOmiyageService())
+			omiyageDB := HelperNewTestTXedDB(t)
+			client := HelperNewOmiyageServiceBuffClient(
+				t,
+				NewOmiyageService(
+					command.NewUserSignUpUseCase(
+						nil,
+					),
+				),
+			)
 
 			// action
 			got, err := client.SignUp(context.Background(), tt.args.request)
 
 			// arrange
-
-			// assert
-			if tt.assertErrFunc != nil {
-				tt.assertErrFunc(t, err)
+			if tt.arrangeFunc != nil {
+				tt.arrangeFunc(t, omiyageDB)
 			}
 
+			// assert
 			opts := []cmp.Option{
 				// proto全般的にこのfieldの比較はテストの関心外として良い
 				cmpopts.IgnoreTypes(protoimpl.MessageState{}),
@@ -138,6 +204,12 @@ func TestOmiyageService_SignUp(t *testing.T) {
 				t.Errorf("differs: (-got +want)\n%s", d)
 			}
 
+			if tt.assertErrFunc != nil {
+				tt.assertErrFunc(t, err)
+			}
+			if tt.assertDataFunc != nil {
+				tt.assertDataFunc(t, omiyageDB, got)
+			}
 		})
 	}
 }

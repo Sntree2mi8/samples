@@ -7,3 +7,6 @@ install:
 
 gen:
 	go generate ./...
+
+gen_sql:
+	sqlc generate
