@@ -33,11 +33,11 @@ message SignUpRequest {
 }
 
 message SignUpResponse {
+  message DomainError {}
+
   optional DomainError error = 1;
   types.user.v1.User user = 2;
 }
-
-message DomainError {}
 
 message AddRecipientGroupsRequest {
   // 送り手ユーザID
@@ -50,5 +50,7 @@ message AddRecipientGroupsRequest {
 }
 
 message AddRecipientGroupsResponse {
+  message DomainError {}
+
   optional DomainError error = 1;
 }
