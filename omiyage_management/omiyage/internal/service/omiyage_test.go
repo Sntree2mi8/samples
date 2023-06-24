@@ -6,6 +6,7 @@ import (
 	"github.com/DATA-DOG/go-txdb"
 	"github.com/Sntree2mi8/samples/omiyage_management/omiyage/internal/core/usecase/command"
 	"github.com/Sntree2mi8/samples/omiyage_management/omiyage/internal/infrastructure/mysql/gen/user"
+	"github.com/Sntree2mi8/samples/omiyage_management/omiyage/internal/repository"
 	omiyagev1 "github.com/Sntree2mi8/samples/omiyage_management/proto/gen/go/omiyage/v1"
 	userv1 "github.com/Sntree2mi8/samples/omiyage_management/proto/gen/go/types/user/v1"
 	"github.com/go-sql-driver/mysql"
@@ -173,11 +174,13 @@ func TestOmiyageService_SignUp(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			omiyageDB := HelperNewTestTXedDB(t)
+			defer omiyageDB.Close()
+
 			client := HelperNewOmiyageServiceBuffClient(
 				t,
 				NewOmiyageService(
 					command.NewUserSignUpUseCase(
-						nil,
+						repository.NewUserRepository(omiyageDB),
 					),
 				),
 			)
